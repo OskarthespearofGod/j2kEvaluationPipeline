@@ -28,7 +28,7 @@ jobs:
 
       - name: Clone target Java project (RxJava — a real-world, non-petclinic choice)
         run: |
-          git clone --depth=1 --branch 3.1.9 \
+          git clone --depth=1 --branch v3.1.9 \
             https://github.com/ReactiveX/RxJava.git target-repo
 
       # ── Conversion step ──────────────────────────────────────────────────────

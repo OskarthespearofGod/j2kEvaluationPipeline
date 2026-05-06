@@ -47,7 +47,7 @@ An automated GitHub Actions pipeline that runs IntelliJ's static `j2k` converter
 git clone https://github.com/OskarthespearofGod/j2kEvaluationPipeline && cd j2kEvaluationPipeline
 
 # 2. Clone the target Java project
-git clone --depth=1 --branch 3.1.9 https://github.com/ReactiveX/RxJava target-repo
+git clone --depth=1 --branch v3.1.9 https://github.com/ReactiveX/RxJava target-repo
 
 # 3. Run j2k on the target repo
 mkdir -p converted/target
