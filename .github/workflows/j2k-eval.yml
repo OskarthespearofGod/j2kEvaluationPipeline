@@ -70,7 +70,7 @@ jobs:
 
       - name: Run evaluator — target repo
         run: |
-          java -jar evaluator/build/libs/evaluator-all.jar \
+          java -jar evaluator/build/libs/evaluator-1.0.0-all.jar \
             --original   target-repo/src/main/java \
             --converted  converted/target \
             --report     results/target-report.json \
@@ -78,7 +78,7 @@ jobs:
 
       - name: Run evaluator — edge cases
         run: |
-          java -jar evaluator/build/libs/evaluator-all.jar \
+          java -jar evaluator/build/libs/evaluator-1.0.0-all.jar \
             --original   edge-cases/src \
             --converted  converted/edge-cases \
             --report     results/edge-report.json \
