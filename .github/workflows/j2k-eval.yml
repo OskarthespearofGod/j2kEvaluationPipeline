@@ -1,0 +1,95 @@
+name: J2K Conversion Evaluation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  j2k-evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Kotlin
+        uses: fwilhe2/setup-kotlin@main
+        with:
+          version: '2.0.21'
+
+      - name: Clone target Java project (RxJava — a real-world, non-petclinic choice)
+        run: |
+          git clone --depth=1 --branch 3.1.9 \
+            https://github.com/ReactiveX/RxJava.git target-repo
+
+      # ── Conversion step ──────────────────────────────────────────────────────
+      # We use IntelliJ IDEA Community in headless mode to run j2k.
+      # The converter is invoked via a thin wrapper script that calls
+      # idea.sh with the 'convertJavaToKotlin' inspect profile.
+      # As a fallback (and for the edge-case dataset), we also use
+      # the kotlin-j2k standalone jar shipped inside the Kotlin compiler.
+      - name: Download IntelliJ IDEA Community (headless j2k)
+        run: |
+          curl -L \
+            "https://download.jetbrains.com/idea/ideaIC-2024.3.tar.gz" \
+            -o idea.tar.gz
+          tar -xzf idea.tar.gz
+          mv idea-IC-* idea
+          chmod +x idea/bin/idea.sh
+
+      - name: Run j2k on target repo Java sources
+        run: |
+          mkdir -p converted/target
+          bash converter/run_j2k.sh \
+            ./target-repo/src/main/java \
+            ./converted/target \
+            ./idea
+
+      - name: Run j2k on edge-case dataset
+        run: |
+          mkdir -p converted/edge-cases
+          bash converter/run_j2k.sh \
+            ./edge-cases/src \
+            ./converted/edge-cases \
+            ./idea
+
+      # ── Evaluation step (pure Kotlin) ─────────────────────────────────────
+      - name: Build evaluator
+        run: |
+          cd evaluator
+          ./gradlew shadowJar
+
+      - name: Run evaluator — target repo
+        run: |
+          java -jar evaluator/build/libs/evaluator-all.jar \
+            --original   target-repo/src/main/java \
+            --converted  converted/target \
+            --report     results/target-report.json \
+            --markdown   results/target-report.md
+
+      - name: Run evaluator — edge cases
+        run: |
+          java -jar evaluator/build/libs/evaluator-all.jar \
+            --original   edge-cases/src \
+            --converted  converted/edge-cases \
+            --report     results/edge-report.json \
+            --markdown   results/edge-report.md \
+            --edge-mode
+
+      - name: Print summary
+        run: cat results/target-report.md results/edge-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: j2k-evaluation-results
+          path: results/

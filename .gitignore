@@ -1,0 +1,47 @@
+# Gradle build folders
+**/build/
+**/.gradle/
+
+# Gradle caches & wrapper local settings
+.gradle/
+local.properties
+
+# IDEA / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Generated and binary files
+*.class
+*.log
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.tmp
+*.bak
+
+# Temporary files
+*~
+*.swp
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+
+# Build output from other tools
+bin/
+tmp/
