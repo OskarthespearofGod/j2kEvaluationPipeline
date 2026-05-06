@@ -44,7 +44,7 @@ An automated GitHub Actions pipeline that runs IntelliJ's static `j2k` converter
 
 ```bash
 # 1. Clone this repo
-git clone {j2k github link} && cd j2k
+git clone https://github.com/OskarthespearofGod/j2kEvaluationPipeline && cd j2kEvaluationPipeline
 
 # 2. Clone the target Java project
 git clone --depth=1 --branch 3.1.9 https://github.com/ReactiveX/RxJava target-repo
