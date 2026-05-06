@@ -26,6 +26,7 @@ out/
 *.class
 *.log
 *.jar
+!evaluator/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.nar
