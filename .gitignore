@@ -1,6 +1,7 @@
 # Gradle build folders
 **/build/
 **/.gradle/
+**/.gradle-dist/
 
 # Gradle caches & wrapper local settings
 .gradle/

@@ -1,0 +1,12 @@
+<idea-plugin>
+    <id>dev.oskaras.j2k-cli</id>
+    <name>J2K CLI</name>
+    <vendor>oskaras</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <appStarter implementation="dev.oskaras.j2kcli.RunJ2kCliStarter"/>
+    </extensions>
+</idea-plugin>

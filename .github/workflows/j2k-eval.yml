@@ -21,6 +21,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set up Kotlin
         uses: fwilhe2/setup-kotlin@main
         with:
@@ -31,12 +34,6 @@ jobs:
           git clone --depth=1 --branch v3.1.9 \
             https://github.com/ReactiveX/RxJava.git target-repo
 
-      # ── Conversion step ──────────────────────────────────────────────────────
-      # I use IntelliJ IDEA Community in headless mode to run j2k.
-      # The converter is invoked via a thin wrapper script that calls
-      # idea.sh with the 'convertJavaToKotlin' inspect profile.
-      # As a fallback (and for the edge-case dataset), we also use
-      # the kotlin-j2k standalone jar shipped inside the Kotlin compiler.
       - name: Download IntelliJ IDEA Community (headless j2k)
         run: |
           curl -L \
@@ -46,13 +43,25 @@ jobs:
           mv idea-IC-* idea
           chmod +x idea/bin/idea.sh
 
+      - name: Build j2k CLI plugin
+        run: |
+          cd converter/j2k-cli
+          ./gradlew buildPlugin
+
+      - name: Install j2k CLI plugin
+        run: |
+          mkdir -p .idea-plugins
+          mkdir -p .idea-plugins/j2k-cli/lib
+          cp converter/j2k-cli/build/libs/j2k-cli-*.jar .idea-plugins/j2k-cli/lib/
+
       - name: Run j2k on target repo Java sources
         run: |
           mkdir -p converted/target
           bash converter/run_j2k.sh \
             ./target-repo/src/main/java \
             ./converted/target \
-            ./idea
+            ./idea \
+            ./.idea-plugins
 
       - name: Run j2k on edge-case dataset
         run: |
@@ -60,7 +69,8 @@ jobs:
           bash converter/run_j2k.sh \
             ./edge-cases/src \
             ./converted/edge-cases \
-            ./idea
+            ./idea \
+            ./.idea-plugins
 
       # ── Evaluation step (pure Kotlin) ─────────────────────────────────────
       - name: Build evaluator

@@ -13,7 +13,8 @@ An automated GitHub Actions pipeline that runs IntelliJ's static `j2k` converter
 ├── .github/workflows/
 │   └── j2k-eval.yml          # CI pipeline
 ├── converter/
-│   └── run_j2k.sh            # Shell wrapper for headless j2k
+│   ├── run_j2k.sh            # Wrapper that runs the custom j2k CLI starter
+│   └── j2k-cli/              # IntelliJ plugin project that exposes run-j2k-cli
 ├── evaluator/                # Kotlin project — evaluation logic
 │   ├── build.gradle.kts
 │   ├── settings.gradle.kts
@@ -49,15 +50,23 @@ git clone https://github.com/OskarthespearofGod/j2kEvaluationPipeline && cd j2kE
 # 2. Clone the target Java project
 git clone --depth=1 --branch v3.1.9 https://github.com/ReactiveX/RxJava target-repo
 
-# 3. Run j2k on the target repo
+# 3. Build the IntelliJ j2k CLI plugin
+cd converter/j2k-cli
+./gradlew buildPlugin
+cd ../..
+mkdir -p .idea-plugins
+mkdir -p .idea-plugins/j2k-cli/lib
+cp converter/j2k-cli/build/libs/j2k-cli-*.jar .idea-plugins/j2k-cli/lib/
+
+# 4. Run j2k on the target repo
 mkdir -p converted/target
-bash converter/run_j2k.sh ./target-repo/src/main/java ./converted/target $IDEA_HOME
+bash converter/run_j2k.sh ./target-repo/src/main/java ./converted/target $IDEA_HOME ./.idea-plugins
 
-# 4. Run j2k on the edge-case dataset
+# 5. Run j2k on the edge-case dataset
 mkdir -p converted/edge-cases
-bash converter/run_j2k.sh ./edge-cases/src ./converted/edge-cases $IDEA_HOME
+bash converter/run_j2k.sh ./edge-cases/src ./converted/edge-cases $IDEA_HOME ./.idea-plugins
 
-# 5. Build and run the evaluator
+# 6. Build and run the evaluator
 cd evaluator
 ./gradlew shadowJar
 cd ..
@@ -75,7 +84,7 @@ java -jar evaluator/build/libs/evaluator-all.jar \
   --markdown  results/edge-report.md \
   --edge-mode
 
-# 6. View results
+# 7. View results
 cat results/target-report.md
 cat results/edge-report.md
 ```
@@ -101,10 +110,11 @@ These combine into a **0–100 idiomatic score** per file.
 The GitHub Actions workflow (`.github/workflows/j2k-eval.yml`):
 
 1. Clones RxJava 3.1.9
-2. Downloads IntelliJ IDEA Community (headless)
-3. Runs `run_j2k.sh` on both the real-world repo and the edge-case dataset
-4. Builds the Kotlin evaluator with Gradle
-5. Runs both evaluation passes and publishes the Markdown reports as a GitHub Actions job summary
-6. Uploads JSON + Markdown as build artifacts
+2. Downloads IntelliJ IDEA Community 2024.3
+3. Builds and installs a custom IntelliJ plugin (`converter/j2k-cli`) with a `run-j2k-cli` `ApplicationStarter`
+4. Runs `run_j2k.sh` on both the real-world repo and the edge-case dataset
+5. Builds the Kotlin evaluator with Gradle
+6. Runs both evaluation passes and publishes the Markdown reports as a GitHub Actions job summary
+7. Uploads JSON + Markdown as build artifacts
 
 See `docs/EDGE_CASES.md` for detailed hypotheses and expected results.

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GRADLE_VERSION="8.10.2"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CACHE_DIR="$SCRIPT_DIR/.gradle-dist"
+DIST_DIR="$CACHE_DIR/gradle-$GRADLE_VERSION"
+DIST_ZIP="$CACHE_DIR/gradle-$GRADLE_VERSION-bin.zip"
+GRADLE_BIN="$DIST_DIR/bin/gradle"
+
+mkdir -p "$CACHE_DIR"
+
+if [[ ! -x "$GRADLE_BIN" ]]; then
+  echo "Bootstrapping Gradle $GRADLE_VERSION for j2k-cli..."
+  if [[ ! -f "$DIST_ZIP" ]]; then
+    curl -fsSL "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" -o "$DIST_ZIP"
+  fi
+  unzip -q -o "$DIST_ZIP" -d "$CACHE_DIR"
+fi
+
+# The IntelliJ Gradle plugin used here is not compatible with JDK 25 yet.
+# Prefer running Gradle with JDK 21, then JDK 17.
+if [[ -z "${JAVA_HOME:-}" ]] && command -v /usr/libexec/java_home >/dev/null 2>&1; then
+  if JAVA21_HOME="$(/usr/libexec/java_home -v 21 2>/dev/null)"; then
+    export JAVA_HOME="$JAVA21_HOME"
+  elif JAVA17_HOME="$(/usr/libexec/java_home -v 17 2>/dev/null)"; then
+    export JAVA_HOME="$JAVA17_HOME"
+  fi
+fi
+
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+
+exec "$GRADLE_BIN" "$@"

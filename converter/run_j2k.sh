@@ -4,6 +4,7 @@ set -euo pipefail
 SRC_DIR="$(realpath "$1")"
 OUT_DIR="$(realpath "$2")"
 IDEA_HOME="$(realpath "$3")"
+PLUGIN_DIR="${4:-}"
 
 mkdir -p "$OUT_DIR"
 
@@ -12,52 +13,31 @@ echo "Source : $SRC_DIR"
 echo "Output : $OUT_DIR"
 echo "IDEA   : $IDEA_HOME"
 
-JAVA_FILES=()
-while IFS= read -r -d '' f; do
-  JAVA_FILES+=("$f")
-done < <(find "$SRC_DIR" -name "*.java" -print0)
-
-TOTAL=${#JAVA_FILES[@]}
-echo "Found $TOTAL Java files"
-
-if [[ $TOTAL -eq 0 ]]; then
-  echo "No Java files found — exiting."
-  exit 0
+if [[ -x "$IDEA_HOME/bin/idea.sh" ]]; then
+  IDEA_LAUNCHER="$IDEA_HOME/bin/idea.sh"
+elif [[ -x "$IDEA_HOME/bin/idea" ]]; then
+  IDEA_LAUNCHER="$IDEA_HOME/bin/idea"
+elif [[ -x "$IDEA_HOME/MacOS/idea" ]]; then
+  IDEA_LAUNCHER="$IDEA_HOME/MacOS/idea"
+else
+  echo "No IntelliJ launcher found at $IDEA_HOME/bin/idea(.sh) or $IDEA_HOME/MacOS/idea"
+  exit 1
 fi
 
-SUCCESS=0
-FAILED=0
-FAILED_FILES=()
+if [[ -n "$PLUGIN_DIR" ]]; then
+  IDEA_PROPERTIES=("-Didea.plugins.path=$PLUGIN_DIR")
+else
+  IDEA_PROPERTIES=()
+fi
 
-for JAVA_FILE in "${JAVA_FILES[@]}"; do
-  REL_PATH="${JAVA_FILE#$SRC_DIR/}"
-  KT_REL="${REL_PATH%.java}.kt"
-  KT_OUT="$OUT_DIR/$KT_REL"
-  mkdir -p "$(dirname "$KT_OUT")"
-
-  if timeout 60 "$IDEA_HOME/bin/idea.sh" java-to-kotlin \
-      --headless \
-      --input  "$JAVA_FILE" \
-      --output "$KT_OUT" \
-      2>/dev/null; then
-    (( SUCCESS++ )) || true
-  else
-    (( FAILED++ )) || true
-    FAILED_FILES+=("$REL_PATH")
-    echo "// J2K_CONVERSION_FAILED: $REL_PATH" > "$KT_OUT"
-  fi
-done
-
-echo "Conversion complete: $SUCCESS succeeded, $FAILED failed"
+timeout 600 "$IDEA_LAUNCHER" "${IDEA_PROPERTIES[@]}" run-j2k-cli \
+  --input "$SRC_DIR" \
+  --output "$OUT_DIR"
 
 MANIFEST="$OUT_DIR/.j2k_manifest.txt"
-{
-  echo "total=$TOTAL"
-  echo "success=$SUCCESS"
-  echo "failed=$FAILED"
-  for f in "${FAILED_FILES[@]}"; do
-    echo "failed_file=$f"
-  done
-} > "$MANIFEST"
+if [[ ! -f "$MANIFEST" ]]; then
+  echo "Missing manifest at $MANIFEST"
+  exit 1
+fi
 
 echo "Manifest written to $MANIFEST"
